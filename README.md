@@ -1,4 +1,10 @@
-<apex:page controller="ChatFlowController" showHeader="false" standardStylesheets="false" sidebar="false">
+<apex:page controller="ChatFlowController" > 
+    <apex:includeScript value="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.2.min.js"/>
+      <script type="text/javascript" src="../../soap/ajax/65.0/connection.js"></script>
+<apex:outputText value="The unformatted time right now is: {! accname }"  id="txt2" />
+<apex:param name="firstParam" assignTo="{!enteredText1}" value="{! accname }" id="txt1"/>
+
+
   <style>
     #chat-widget {
       position: fixed;
@@ -12,10 +18,6 @@
       z-index: 9999;
       overflow: hidden;
       transition: all 0.3s ease-in-out;
-    }
-
-    #chat-widget.hidden {
-      display: none;
     }
 
     .chat-header {
@@ -94,7 +96,6 @@
       bottom: 20px;
       right: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-      z-index: 9998;
     }
 
     #launchChatBtn:hover {
@@ -109,12 +110,12 @@
     <p id="availabilityMessage">Please wait...</p>
   </div>
 
-  <button id="launchChatBtn" onclick="launchChatHandler()">
+  <button id="launchChatBtn" onclick="document.dispatchEvent(new Event('launchMIAWChatEvent'))">
     Chat with a Specialist
   </button>
 
   <div id="embedded-messaging-root"></div>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script type="text/javascript">
     function initEmbeddedMessaging() {
       try {
@@ -136,203 +137,113 @@
     onload="initEmbeddedMessaging()">
   </script>
 
-  <script type="text/javascript">
-    // Global variables
-    var checkIntervalId = null;
-    var embeddedMessagingReady = false;
+  <script>
+    console.log('dsfdsvsdhvdsj');
+    var txtVal1 = document.getElementById("{!$Component.txt2}");
+    var fullText = txtVal1.textContent || txtVal1.innerText;
+    console.log(fullText); 
+// Remove the prefix "The unformatted time right now is: "
+var jsonString = fullText.replace(/^The unformatted time right now is:\s*/, '');
+    console.log(jsonString); 
+   
+    console.log(txtVal1);
+  
+    window.addEventListener('onEmbeddedMessagingReady', function () {
+      embeddedservice_bootstrap.settings.hideChatButtonOnLoad = true;
 
-    // REST API Configuration
-    var REST_API_CONFIG = {
-      endpoint: '/services/apexrest/ChatAvailability',
-      sessionId: '{!$Api.Session_ID}'
-    };
-
-    /**
-     * Call REST API to check agent availability
-     */
-    function checkAgentAvailabilityREST() {
-      return fetch(REST_API_CONFIG.endpoint, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + REST_API_CONFIG.sessionId
-        }
-      })
-      .then(function(response) {
-        if (!response.ok) {
-          throw new Error('REST API call failed: ' + response.status);
-        }
-        return response.json();
-      })
-      .then(function(result) {
-        console.log('API Response:', result);
-        return { status: true, data: result };
-      })
-      .catch(function(error) {
-        console.error('Error calling REST API:', error);
-        return { status: false, error: error.message };
-      });
-    }
-
-    /**
-     * Update UI based on availability response
-     */
-    function updateAvailabilityUI(response) {
       var msg = document.getElementById('availabilityMessage');
       var btn = document.getElementById('launchChatBtn');
       var header = document.getElementById('chat-header');
       var card = document.getElementById('chat-widget');
 
-      if (!msg || !header || !card || !btn) {
-        console.error('Required DOM elements not found');
-        return;
-      }
+      function checkAgentAvailability() {
+          console.log('sfjhfjkfi f kvm fkjfnm vsknsdm sdmnb');
+          
+        Visualforce.remoting.Manager.invokeAction(
+          '{!$RemoteAction.ChatFlowController.runChatFlow}',
+          function (result, event) {
+            if (!msg || !header) return;
 
-      if (response.status && response.data) {
-        var result = response.data;
-        
-        if (result.numberofAgent && result.numberofAgent > 0 && result.isWithinBH) {
-          // Agents available
-          header.style.display = "none";
-          card.style.display = "none"; 
-          msg.innerText = "";
-          msg.classList.remove("offline");
-          btn.style.display = 'block';
-        } else {
-          // Agents not available
-          card.style.display = "block";
-          header.classList.add("offline");
-          btn.style.display = 'none';
-
-          if (!result.isWithinBH) {
-            msg.innerHTML = "<span class='offline-label'>🕒 Outside Business Hours</span>" +
-                            "<div>Hello, our specialists are not available at the moment.<br/>" +
-                            "Our live chat and phone hours are:<br/>" +
-                            "<span class='chat-hours'>Monday - Friday<br/>8:30AM - 8:00PM EST</span>" +
-                            "If you would like, you may submit your question and one of our specialists will follow up with you:<br/>" +
-                            "<a class='submit-link-btn' href='https://askmed.bayer.com/submit-question?utm_source=LiveChat&utm_medium=Website&utm_campaign=LiveChat' target='_blank'>Submit Question</a></div>";
-          } else {
-            msg.innerHTML = "<span class='offline-label'>💬 Agents are Offline</span>" +
-                            "<div>I'm sorry, it looks like all agents are unavailable at this time.<br/><br/>" +
-                            "Please try again later or submit your question and one of our specialists will follow up with you:<br/>" +
-                            "<a class='submit-link-btn' href='https://askmed.bayer.com/submit-question?utm_source=LiveChat&utm_medium=Website&utm_campaign=LiveChat' target='_blank'>Submit Question</a></div>";
-          }
-          msg.classList.add("offline");
-        }
-      } else {
-        // Error state
-        card.style.display = "block";
-        header.innerText = "⚠️ Error";
-        header.style.display = "block";
-        header.classList.remove("offline");
-        msg.innerText = 'There was a problem running the availability check.';
-        msg.classList.remove("offline");
-        btn.style.display = 'none';
-      }
-    }
-
-    /**
-     * Check agent availability
-     */
-    function checkAgentAvailability() {
-      console.log('Checking agent availability...');
-      checkAgentAvailabilityREST()
-        .then(function(response) {
-          updateAvailabilityUI(response);
-        })
-        .catch(function(error) {
-          console.error('Availability check failed:', error);
-          updateAvailabilityUI({ status: false, error: error.message });
-        });
-    }
-
-    /**
-     * Launch chat handler
-     */
-    function launchChatHandler() {
-      console.log('Launch chat button clicked');
-      checkAgentAvailabilityREST()
-        .then(function(response) {
-          if (response.status && response.data) {
-            var result = response.data;
-            
-            if (result.numberofAgent && result.numberofAgent > 0) {
-              // Launch chat
-              if (typeof embeddedservice_bootstrap !== 'undefined' && 
-                  embeddedservice_bootstrap.utilAPI && 
-                  embeddedservice_bootstrap.utilAPI.launchChat) {
-                embeddedservice_bootstrap.utilAPI.launchChat()
-                  .then(function() {
-                    console.log('Chat launched successfully');
-                    var card = document.getElementById('chat-widget');
-                    if (card) card.classList.add('hidden');
-                  })
-                  .catch(function(error) {
-                    console.error('Could not launch chat:', error);
-                    var msg = document.getElementById('availabilityMessage');
-                    if (msg) msg.innerText = 'Could not launch chat. Please try again.';
-                  });
+            if (event.status) {
+              if (result && result.numberofAgent && result.numberofAgent > 0 && result.isWithinBH) {
+                header.style.display = "none";
+                card.style.display = "none"; 
+                msg.innerText = "";
+                msg.classList.remove("offline");
+                btn.style.display = 'block';
               } else {
-                console.error('Embedded messaging not ready');
+                card.style.display = "block";
+                header.classList.add("offline");
+
+                if (!result.isWithinBH) {
+                  msg.innerHTML = "<span class='offline-label'>🕒 Outside Business Hours</span>" +
+                                  "<div>Hello, our specialists are not available at the moment.<br/>" +
+                                  "Our live chat and phone hours are:<br/>" +
+                                  "<span class='chat-hours'>Monday - Friday<br/>8:30AM - 8:00PM EST</span>" +
+                                  "If you would like, you may submit your question and one of our specialists will follow up with you:<br/>" +
+                                  "<a class='submit-link-btn' href='https://askmed.bayer.com/submit-question?utm_source=LiveChat&utm_medium=Website&utm_campaign=LiveChat' target='_blank'>Submit Question</a></div>";
+                } else {
+                  msg.innerHTML = "<span class='offline-label'>💬 Agents are Offline</span>" +
+                                  "<div>I'm sorry, it looks like all agents are unavailable at this time.<br/><br/>" +
+                                  "Please try again later or submit your question and one of our specialists will follow up with you:<br/>" +
+                                  "<a class='submit-link-btn' href='https://askmed.bayer.com/submit-question?utm_source=LiveChat&utm_medium=Website&utm_campaign=LiveChat' target='_blank'>Submit Question</a></div>";
+                }
+
+                msg.classList.add("offline");
+                btn.style.display = 'none';
               }
             } else {
-              // Show offline message
-              updateAvailabilityUI(response);
+              header.innerText = "⚠️ Error";
+              msg.innerText = 'There was a problem running the availability check.';
+              msg.classList.remove("offline");
+              btn.style.display = 'none';
             }
-          } else {
-            updateAvailabilityUI({ status: false });
-          }
-        })
-        .catch(function(error) {
-          console.error('Launch chat failed:', error);
-        });
-    }
-
-    /**
-     * Initialize when embedded messaging is ready
-     */
-    window.addEventListener('onEmbeddedMessagingReady', function() {
-      console.log('Embedded Messaging is ready');
-      embeddedMessagingReady = true;
-      
-      if (typeof embeddedservice_bootstrap !== 'undefined') {
-        embeddedservice_bootstrap.settings.hideChatButtonOnLoad = true;
+          },
+          { escape: false }
+        ); 
       }
 
-      // Initial check
-      checkAgentAvailability();
-
-      // Check every 60 seconds
-      if (checkIntervalId) {
-        clearInterval(checkIntervalId);
-      }
-      checkIntervalId = setInterval(checkAgentAvailability, 60000);
-    });
-
-    /**
-     * Handle chat minimized event
-     */
-    window.addEventListener("onEmbeddedMessagingWindowMinimized", function() {
-      console.log('Chat window minimized');
-      var btn = document.getElementById("launchChatBtn");
-      if (btn) {
-        btn.style.display = "none";
-      }
-    });
-
-    /**
-     * Fallback: If embedded messaging doesn't load in 10 seconds, run availability check anyway
-     */
-    setTimeout(function() {
-      if (!embeddedMessagingReady) {
-        console.log('Running fallback availability check (embedded messaging not ready)');
+        setInterval(checkAgentAvailability, 60000);
         checkAgentAvailability();
-        
-        // Also set up interval
-        if (!checkIntervalId) {
-          checkIntervalId = setInterval(checkAgentAvailability, 60000);
+
+      document.addEventListener('launchMIAWChatEvent', function () {
+        Visualforce.remoting.Manager.invokeAction(
+          '{!$RemoteAction.ChatFlowController.runChatFlow}',
+          function (result, event) {
+            if (event.status) {
+              if (result && result.numberofAgent && result.numberofAgent > 0) {
+                embeddedservice_bootstrap.utilAPI.launchChat()
+                  .then(function () { if (card) card.classList.add('hidden'); })
+                  .catch(function (error) { if (msg) msg.innerText = 'Could not launch chat.'; });
+              } else {
+                card.style.display = "block";
+                msg.innerHTML = "<span class='offline-label'>💬 Agents are Offline</span>" +
+                                "<div>I'm sorry, it looks like all agents are unavailable at this time.<br/><br/>" +
+                                "Please try again later or submit your question and one of our specialists will follow up with you:<br/>" +
+                                "<a class='submit-link-btn' href='https://askmed.bayer.com/submit-question?utm_source=LiveChat&utm_medium=Website&utm_campaign=LiveChat' target='_blank'>Submit Question</a></div>";
+                msg.classList.add("offline");
+                btn.style.display = 'none';
+              }
+            } else {
+              header.innerText = "⚠️ Error";
+              msg.innerText = 'There was a problem running the availability check.';
+              msg.classList.remove("offline");
+              btn.style.display = 'none';
+            }
+          },
+          { escape: false }
+        );
+      });
+
+      /**
+       * Salesforce-provided event: Fires when chat window is minimized
+       */
+      window.addEventListener("onEmbeddedMessagingWindowMinimized", function() {
+        var btn = document.getElementById("launchChatBtn");
+        if (btn) {
+          btn.style.display = "none"; // Hide custom button when chat is minimized
         }
-      }
-    }, 10000);
+      });
+    });
   </script>
 </apex:page>
