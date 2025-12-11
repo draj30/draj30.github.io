@@ -140,11 +140,11 @@
   <script>
     console.log('dsfdsvsdhvdsj');
     var txtVal1 = document.getElementById("{!$Component.txt2}");
-    var fullText = txtVal1.textContent || txtVal1.innerText;
-    console.log(fullText); 
+    // var fullText = txtVal1.textContent || txtVal1.innerText;
+    // console.log(fullText); 
 // Remove the prefix "The unformatted time right now is: "
-var jsonString = fullText.replace(/^The unformatted time right now is:\s*/, '');
-    console.log(jsonString); 
+    //var jsonString = fullText.replace(/^The unformatted time right now is:\s*/, '');
+    //   console.log(jsonString); 
    
     console.log(txtVal1);
   
@@ -157,8 +157,66 @@ var jsonString = fullText.replace(/^The unformatted time right now is:\s*/, '');
       var card = document.getElementById('chat-widget');
 
       function checkAgentAvailability() {
-          console.log('sfjhfjkfi f kvm fkjfnm vsknsdm sdmnb');
+          console.log('Dhiraj test test test');
+          // start
+          /*      jQuery(document).ready(function($) {
+      // Make POST request to get the OAuth token
+      $.ajax({
+        url: 'https://bayeragmiidas--test.sandbox.my.salesforce.com/services/oauth2/token',
+        type: 'POST',
+        data: {
+          'grant_type': 'client_credentials',
+          'client_id': '3MVG9CG8tifMyyO1fMXNWesnELBesCrSqB0Yp2iN2pJCKr2qIsIGeciybYnhy7FU8rlM5h.WTqDR7.Ut.ec1o',  // Replace with your actual Client ID
+          'client_secret': 'B6389D43EBDF6BAA4755094C8D4940562FF4B3F955DB6145E6AFE96F59EE5F93'  // Replace with your actual Client Secret
+        },
+           headers: {
+      // You can add any custom headers you need here
+      'Content-Type': 'application/x-www-form-urlencoded'  // Example header: Ensures proper form-urlencoded encoding
+    },
+        success: function(response) {
+          // Handle the successful response and extract the access token
+          var accessToken = response.access_token;
+          console.log('Access Token: ' + accessToken);
+         },
+        error: function(jqXHR, textStatus, errorThrown) {
+          alert('Error fetching OAuth token d: ' + jqXHR.status + ': ' + errorThrown);
+            console.log('Error fetching OAuth token d: ' + jqXHR.status + ': ' + errorThrown);
+        }
+      });
+    });
           
+          /* sforce.connection.sessionId = '{!GETSESSIONID()}';
+
+    jQuery(document).ready(function($) {
+      // Prepare the request to get the OAuth token using AJAX Toolkit
+
+      // Endpoint and POST data to get the OAuth token
+      var oauthUrl = 'https://bayeragmiidas--test.sandbox.my.salesforce.com/services/oauth2/token';
+      var data = {
+        'grant_type': 'client_credentials',
+        'client_id': '3MVG9CG8tifMyyO1fMXNWesnELBesCrSqB0Yp2iN2pJCKr2qIsIGeciybYnhy7FU8rlM5h.WTqDR7.Ut.ec1o', // Replace with your actual Client ID
+        'client_secret': 'B6389D43EBDF6BAA4755094C8D4940562FF4B3F955DB6145E6AFE96F59EE5F93' // Replace with your actual Client Secret
+      };
+
+      // Make the OAuth request using the AJAX Toolkit
+      sforce.connection.remoteFunction({
+        url: oauthUrl,
+        method: 'POST',
+        params: data,
+        onSuccess: function(response) {
+          // Parse the response to get the access token
+          var responseObj = JSON.parse(response);
+          var accessToken = responseObj.access_token;
+          console.log('Access Token: ' + accessToken);
+        },
+        onFailure: function(error) {
+          // Handle errors
+          alert('Error fetching OAuth token: ' + error);
+          console.log('Error fetching OAuth token: ' + error);
+        }
+      });
+    });*/
+          // finish
         Visualforce.remoting.Manager.invokeAction(
           '{!$RemoteAction.ChatFlowController.runChatFlow}',
           function (result, event) {
@@ -203,8 +261,8 @@ var jsonString = fullText.replace(/^The unformatted time right now is:\s*/, '');
         ); 
       }
 
-        setInterval(checkAgentAvailability, 60000);
-        checkAgentAvailability();
+        //setInterval(checkAgentAvailability, 60000);
+        //checkAgentAvailability();
 
       document.addEventListener('launchMIAWChatEvent', function () {
         Visualforce.remoting.Manager.invokeAction(
